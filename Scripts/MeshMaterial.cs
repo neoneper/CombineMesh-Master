@@ -6,6 +6,11 @@ using System;
 
 namespace CombineMesh
 {
+    public class Partition
+    {
+
+    }
+
     /// <summary>
     /// Utilize isto para criar <see cref="Mesh"/> combinados.
     /// Com este objeto é possivel combinar todas as Mesh que utilizam um mesmo material.
@@ -14,8 +19,12 @@ namespace CombineMesh
     /// </summary>
     public class MeshMaterial
     {
-        private bool differentMaterials = false;
-        public bool AllowDifferentMaterials { get { return differentMaterials; } }
+        private bool _createMeshCollider = false;
+        private bool _differentMaterials = false;
+        private int _vertexCount = 0;
+        private int _maxVertexCount = 0;
+
+        public bool AllowDifferentMaterials { get { return _differentMaterials; } }
         /// <summary>
         /// <seealso cref="GameObject"/> criado para receber o novo Mesh combinado.
         /// </summary>
@@ -47,6 +56,7 @@ namespace CombineMesh
         /// O Material compartilhado pode ser verificado em <see cref="sharedMaterial"/> se esta for uma lista de sharedMaterial iguais.
         /// </summary>
         public List<MeshRenderer> meshRenderers;
+        public List<MeshFilter> meshFilters;
         /// <summary>
         /// Lista de todos os materiais existentes em <see cref="meshRenderers"/>. 
         /// Esta lista pode conter todos os materiais iguais e ou todos diferentes.
@@ -78,21 +88,25 @@ namespace CombineMesh
 
             }
         }
+        public int vertexCount { get { return _vertexCount; } }
+
 
         /// <summary>
         /// Cria um novo MeshMaterial que permite apenas <see cref="MeshRenderer"/> que possuem sharedMaterial iguais.
         /// </summary>
         /// <param name="material"></param>
         /// <param name="fromMeshRenderer"></param>
-        public MeshMaterial(Material material, MeshRenderer fromMeshRenderer)
+        public MeshMaterial(Material material, MeshRenderer fromMeshRenderer, int maxVertexCount = 30000)
         {
+            _differentMaterials = false;
+            _maxVertexCount = maxVertexCount;
+
             gameObject = new GameObject(fromMeshRenderer.gameObject.name);
             gameObject.transform.position = fromMeshRenderer.gameObject.transform.position;
-            fromMeshRenderer.gameObject.transform.parent = gameObject.transform;
+            //fromMeshRenderer.gameObject.transform.parent = gameObject.transform;
 
             this.meshFilter = gameObject.AddComponent<MeshFilter>();
-            //this.meshFilter.mesh = new Mesh();
-
+            this.meshFilters = new List<MeshFilter>();
 
             this.meshRenderer = gameObject.AddComponent<MeshRenderer>();
             this.meshRenderer.sharedMaterial = fromMeshRenderer.sharedMaterial;
@@ -100,21 +114,24 @@ namespace CombineMesh
             this.meshRenderers = new List<MeshRenderer>();
             this.sharedMaterial = material;
 
-            this.meshRenderers.Add(fromMeshRenderer);
+            AddMeshRender(fromMeshRenderer);
+            //this.meshRenderers.Add(fromMeshRenderer);
         }
         /// <summary>
         /// Cria um novo MeshMaterial que permite apenas <see cref="MeshRenderer"/> que possuem sharedMaterial diferente.
         /// </summary>
         /// <param name="name"></param>
         /// <param name="position"></param>
-        public MeshMaterial(string name, Vector3 position)
+        public MeshMaterial(string name, Vector3 position, int maxVertexCount = 30000)
         {
-            differentMaterials = true;
+            _differentMaterials = true;
+            _maxVertexCount = maxVertexCount;
+
             gameObject = new GameObject(name);
             gameObject.transform.position = position;
 
             this.meshFilter = gameObject.AddComponent<MeshFilter>();
-            //this.meshFilter.mesh = new Mesh();
+            this.meshFilters = new List<MeshFilter>();
 
             this.meshRenderer = gameObject.AddComponent<MeshRenderer>();
             this.meshRenderers = new List<MeshRenderer>();
@@ -130,40 +147,60 @@ namespace CombineMesh
         /// 
         /// Se a lista <see cref="MeshRenderer"/> for de sharedMaterial Diferentes, a lista de material de <see cref="meshRenderer"/> será atualiada
         /// para conter o sharedMaterial deste meshRenderer adicionado.
+        /// 
+        /// MeshRenderer com <seealso cref="Mesh"/> nullo não serão adicionados
         /// </summary>
         /// <param name="meshRenderer"></param>
         public void AddMeshRender(MeshRenderer meshRenderer)
         {
-
-            if (sharedMaterials.Contains(meshRenderer.sharedMaterial) == true && differentMaterials == true)
+            MeshFilter mf = meshRenderer.gameObject.GetComponent<MeshFilter>();
+            if (mf == null)
             {
-                Debug.LogError(meshRenderer.name + " couldnt added to list because this MeshMaterial support only different sharedMaterial");
+                Debug.LogWarning(meshRenderer.name + " couldnt added to list because it do not have a valid MeshFilter");
                 return;
             }
-            else if (sharedMaterials.Contains(meshRenderer.sharedMaterial) == false && differentMaterials == false)
+
+            if (mf.sharedMesh == null)
             {
-                Debug.LogError(meshRenderer.name + " couldnt added to list because this MeshMaterial support only same sharedMaterial");
+                Debug.LogWarning(meshRenderer.name + " couldnt added to list because it do not have a valid Mesh at his MeshFilter");
                 return;
+            }
+
+            meshFilters.Add(mf);
+            _vertexCount += mf.mesh.vertexCount;
+
+            if (meshRenderers.Count > 0)
+            {
+                if (sharedMaterials.Contains(meshRenderer.sharedMaterial) == true && AllowDifferentMaterials == true)
+                {
+                    Debug.LogError(meshRenderer.name + " couldnt added to list because this MeshMaterial support only different sharedMaterial");
+                    return;
+                }
+                else if (sharedMaterials.Contains(meshRenderer.sharedMaterial) == false && AllowDifferentMaterials == false)
+                {
+                    Debug.LogError(meshRenderer.name + " couldnt added to list because this MeshMaterial support only same sharedMaterial");
+                    return;
+                }
             }
 
             this.meshRenderers.Add(meshRenderer);
             meshRenderer.gameObject.transform.parent = gameObject.transform;
 
-            if (differentMaterials)
+            if (AllowDifferentMaterials)
             {
                 this.meshRenderer.sharedMaterials = sharedMaterials.ToArray();
             }
         }
 
-
-        public void CombineMeshes()
+     
+        public void CombineMeshes(bool createMeshCollider = false)
         {
-            if (differentMaterials)
-                CombineDifferentMaterials();
+            if (AllowDifferentMaterials)
+                CombineDifferentMaterials(createMeshCollider);
             else
-                CombineSameMaterials();
+                CombineSameMaterials(createMeshCollider);
         }
-        private void CombineDifferentMaterials()
+        private void CombineDifferentMaterials(bool createMeshCollider)
         {
             //Create the array that will form the combined mesh
             CombineInstance[] totalMesh = new CombineInstance[meshRenderers.Count];
@@ -171,7 +208,7 @@ namespace CombineMesh
             for (int i = 0; i < totalMesh.Length; i++)
             {
                 //Add the submeshes in the same order as the material is set in the combined mesh
-                totalMesh[i].mesh = meshRenderers[i].GetComponent<MeshFilter>().mesh;
+                totalMesh[i].mesh = meshFilters[i].mesh;
                 totalMesh[i].transform = meshRenderers[i].gameObject.transform.localToWorldMatrix;
                 meshRenderers[i].gameObject.SetActive(false);
             }
@@ -181,16 +218,17 @@ namespace CombineMesh
             //lestMashMaterial.meshFilter.mesh = new Mesh();
             meshFilter.mesh.CombineMeshes(totalMesh, false, true);
 
-            gameObject.AddComponent<MeshCollider>();
+            if (createMeshCollider)
+                gameObject.AddComponent<MeshCollider>();
         }
-        private void CombineSameMaterials()
+        private void CombineSameMaterials(bool createMeshCollider)
         {
             Vector3 position = gameObject.transform.position;
             gameObject.transform.position = Vector3.zero;
 
             //Get all mesh filters and combine
-            List<MeshFilter> meshFilters = gameObject.GetComponentsInChildren<MeshFilter>(true).ToList();
-            meshFilters.RemoveAll(r => r.sharedMesh == null);
+            // List<MeshFilter> meshFilters = gameObject.GetComponentsInChildren<MeshFilter>(true).ToList();
+            // meshFilters.RemoveAll(r => r.sharedMesh == null);
 
             CombineInstance[] combine = new CombineInstance[meshFilters.Count];
 
@@ -213,7 +251,8 @@ namespace CombineMesh
             gameObject.SetActive(true);
 
             //Add collider to mesh (if needed)
-            gameObject.AddComponent<MeshCollider>();
+            if (createMeshCollider)
+                gameObject.AddComponent<MeshCollider>();
         }
     }
 }
