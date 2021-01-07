@@ -1,5 +1,7 @@
 # CombineMesh
-Unity MeshCombine combines meshes to decrease DrawCalls.
+Unity MeshCombine combines meshes to decrease the Batches.
+
+[Oficial Doc:](https://docs.unity3d.com/Manual/DrawCallBatching.html)
 
 # What exactly does this do?
 
@@ -15,19 +17,19 @@ Unity MeshCombine combines meshes to decrease DrawCalls.
 
 - Make combinations of combinations keeping the different materials of each sub-combination;
 
+
 ![](https://i.gyazo.com/6f21424e46d737d7ea9b209491642267.png)
+
 
 - Ensures that the maximum number of vertices stipulated by the user is not extrapolated, creating new meshes automatically to guarantee the limit.
 
 - Works at run time.
 
-![](https://i.gyazo.com/7ec2564994ab442f1a5e32a229faeef6.gif)
+![](https://media.giphy.com/media/qwZHLYDWcEV8bVyzNc/giphy.gif)
 
 ### HOW TO USE?
 
-All work is done by the** MeshMaterial object.**
-
-![](https://i.gyazo.com/7b4cb1b0febafbddfb143d962e46c7b8.png)
+All work is done by the **MeshMaterial object.**
 
 *In short, this creates a list of MeshRenderer for each unique type of material. After that, the mesh matching work is started.*
 
