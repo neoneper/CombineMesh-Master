@@ -7,6 +7,8 @@ Unity MeshCombine combines meshes to decrease the Batches.
 
 OneClick: Mesh combiner that works at run time. It allows deep combinations and maintains multiple materials.
 
+![](https://i.gyazo.com/2e86afa5329c01a51fec51fd10c9e136.gif)
+
 1 - Combines mesh that use the same shared material.
 
 2 - Combines the previous combinations to create new meshes with the maximum possible verticies.
@@ -14,8 +16,6 @@ OneClick: Mesh combiner that works at run time. It allows deep combinations and 
 ### Features
 
 - Combines meshes of the same material.
-
-![](https://i.gyazo.com/ed7bdc02632e99e34102a6f1fc19dbbc.png)
 
 - Make combinations of combinations keeping the different materials of each sub-combination;
 
