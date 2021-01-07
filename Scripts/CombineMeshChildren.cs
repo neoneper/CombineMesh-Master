@@ -5,7 +5,7 @@ using System.Linq;
 using System;
 using CombineMesh;
 
-namespace CombineMesh.Tests
+namespace CombineMesh
 {
     /// <summary>
     /// Combina todas malhas de objetos Filhos que contenham o mesmo material.
@@ -13,22 +13,32 @@ namespace CombineMesh.Tests
     /// Combina malhas com outros combinados para manter o máximo de vertices possiveis na mesma malha.
     /// Permite malhas de materiais diferentes
     /// </summary>
-    public class RunTimeTest_02 : MonoBehaviour
+    public class CombineMeshChildren : MonoBehaviour
     {
         public int maxVertexForMesh = 3000;
         public bool combineInative = false;
+        public bool combineDeep = false;
 
+        //lista de material contendo todos as malhas que a utilizam.
         Dictionary<string, MeshMaterial> meshes = new Dictionary<string, MeshMaterial>();
 
-        void Start()
+        IEnumerator corotineCombine = null;
+
+        public void StartCombine()
         {
-            CombineSameMaterial();
-            CombineAllMaterials();
+            if (corotineCombine != null)
+            {
+                Debug.LogWarning("StartCombine Denied, wait the last process has finishied");
+                return;
+            }
+
+            corotineCombine = IECombineSameMaterial();
+            StartCoroutine(corotineCombine);
         }
 
         //Categoriza todas as malhas filho por material
         //Combina todos os de mesmo material
-        void CombineSameMaterial()
+        IEnumerator IECombineSameMaterial()
         {
             MeshRenderer[] meshRendererChildren = GetComponentsInChildren<MeshRenderer>(combineInative);
 
@@ -48,11 +58,12 @@ namespace CombineMesh.Tests
                 meshes[material].CombineMeshes();
             }
 
-        }
 
-        //Combina malhas já combinadas para formar malhas multimateriais com o máximo possivel de vertices
-        void CombineAllMaterials()
-        {
+            if (!combineDeep)
+                yield break;
+
+            //DEEP COMBINATION
+
             //Agrupa todos os Mesh combinados gerados em um novo MESH final. Este novo Mesh vai conter um MeshRenderer com todos os materiais usados
             //pelos combinados anteriores, e isto vai permitir que o novo mesh mantenha todas os materiais usados anteriormente
             MeshMaterial lastMeshMaterial = new MeshMaterial(maxVertexForMesh);
@@ -62,12 +73,13 @@ namespace CombineMesh.Tests
             {
                 MeshMaterial meshMaterial = meshes[material];
                 lastMeshMaterial.AddMeshRender(meshMaterial.partitions.Last().meshRenderer);
-
             }
 
             //Combina todos as malhas nesta nova
             lastMeshMaterial.CombineMeshes();
         }
+
+
     }
 
 }
