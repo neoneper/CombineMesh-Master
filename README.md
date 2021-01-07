@@ -1,15 +1,16 @@
 # CombineMesh
 Unity MeshCombine combines meshes to decrease DrawCalls.
 
-
-###What exactly does this do?
+# What exactly does this do?
 
 1 - Combines mesh that use the same shared material.
 
 2 - Combines the previous combinations to create new meshes with the maximum possible verticies.
 
 ### Features
+
 - Combines meshes of the same material.
+
 ![](https://i.gyazo.com/ed7bdc02632e99e34102a6f1fc19dbbc.png)
 
 - Make combinations of combinations keeping the different materials of each sub-combination;
@@ -19,11 +20,13 @@ Unity MeshCombine combines meshes to decrease DrawCalls.
 - Ensures that the maximum number of vertices stipulated by the user is not extrapolated, creating new meshes automatically to guarantee the limit.
 
 - Works at run time.
+
 ![](https://i.gyazo.com/7ec2564994ab442f1a5e32a229faeef6.gif)
 
 ### HOW TO USE?
 
 All work is done by the** MeshMaterial object.**
+
 ![](https://i.gyazo.com/7b4cb1b0febafbddfb143d962e46c7b8.png)
 
 *In short, this creates a list of MeshRenderer for each unique type of material. After that, the mesh matching work is started.*
